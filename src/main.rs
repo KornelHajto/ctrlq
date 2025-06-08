@@ -1,3 +1,36 @@
+//! # CtrlQ - Developer Keylogger
+//!
+//! A friendly keylogger application designed for developers to analyze their typing patterns.
+//! Features real-time statistics, keyboard heatmaps, and a beautiful terminal UI.
+//!
+//! ## Features
+//! - Real-time keystroke monitoring using Linux evdev
+//! - Comprehensive typing statistics and analysis
+//! - Visual keyboard heatmap with color coding
+//! - Data persistence across sessions (JSON format)
+//! - Beautiful terminal UI with multiple tabs
+//! - Reset functionality for fresh statistics
+//!
+//! ## Usage
+//! ```bash
+//! # List available keyboard devices
+//! sudo ctrlq --list-devices
+//!
+//! # Start with automatic device detection
+//! sudo ctrlq
+//!
+//! # Start with specific device
+//! sudo ctrlq -d /dev/input/event8
+//!
+//! # Run without UI (headless mode)
+//! sudo ctrlq --no-ui
+//! ```
+//!
+//! ## Architecture
+//! - `main.rs` - CLI interface and application coordination
+//! - `keylogger.rs` - Core keystroke monitoring and statistics
+//! - `ui.rs` - Terminal user interface using ratatui
+
 mod keylogger;
 mod ui;
 
@@ -6,6 +39,13 @@ use clap::{Arg, Command};
 use keylogger::{find_keyboard_devices, KeyLogger};
 use std::process;
 
+/// Main entry point for the CtrlQ keylogger application.
+///
+/// Handles command line argument parsing, device discovery, and coordinates
+/// the keylogger and UI components.
+///
+/// # Returns
+/// `Result<()>` - Success or application error
 fn main() -> Result<()> {
     let matches = Command::new("ctrlq")
         .version("0.1.0")
@@ -33,7 +73,6 @@ fn main() -> Result<()> {
         )
         .get_matches();
 
-    // Check if user wants to list devices
     if matches.get_flag("list-devices") {
         println!("🔍 Scanning for keyboard devices...\n");
         match find_keyboard_devices() {
@@ -57,11 +96,9 @@ fn main() -> Result<()> {
         return Ok(());
     }
 
-    // Get device path
     let device_path = if let Some(device) = matches.get_one::<String>("device") {
         device.clone()
     } else {
-        // Try to auto-detect
         match find_keyboard_devices() {
             Ok(devices) => {
                 if devices.is_empty() {
@@ -88,7 +125,6 @@ fn main() -> Result<()> {
         }
     };
 
-    // Check if device exists and is accessible
     if !std::path::Path::new(&device_path).exists() {
         eprintln!("❌ Device not found: {}", device_path);
         eprintln!("💡 Try: ctrlq --list-devices");
@@ -101,29 +137,22 @@ fn main() -> Result<()> {
     println!("⚠️  This tool logs keystrokes for analysis - use responsibly!");
     println!();
 
-    // Create keylogger
     let mut keylogger = KeyLogger::new(device_path)?;
     
-    // Start logging
     let (stats_rx, shutdown_tx, reset_tx) = keylogger.start_logging()?;
 
-    // Run UI or headless mode
     if matches.get_flag("no-ui") {
         println!("⌨️  Logging keystrokes... (Press Ctrl+C to stop)");
         
-        // Simple headless mode - just wait for Ctrl+C
         ctrlc::set_handler(move || {
             println!("\n🛑 Received Ctrl+C, shutting down...");
             let _ = shutdown_tx.send(true);
             process::exit(0);
         })?;
 
-        // Keep receiving stats updates
         while let Ok(_stats) = stats_rx.recv() {
-            // Just log periodically or do nothing
         }
     } else {
-        // Run with TUI
         ui::run_ui(stats_rx, shutdown_tx, reset_tx)?;
     }
 
