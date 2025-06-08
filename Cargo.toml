@@ -1,0 +1,18 @@
+[package]
+name = "ctrlq"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+chrono = { version = "0.4.41", features = ["serde"] }
+crossterm = "0.29.0"
+dirs = "6.0.0"
+evdev = "0.13.1"
+serde = { version = "1.0.219", features = ["derive"] }
+serde_json = "1.0.140"
+tokio = { version = "1.0", features = ["full"] }
+tui = "0.19"
+ratatui = "0.28"
+anyhow = "1.0"
+clap = { version = "4.0", features = ["derive"] }
+ctrlc = "3.0"
