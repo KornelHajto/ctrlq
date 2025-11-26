@@ -182,7 +182,7 @@ Statistics are automatically saved to:
 ### Development Setup
 
 ```bash
-git clone https://github.com/username/ctrlq.git
+git clone https://github.com/KornelHajto/ctrlq.git
 cd ctrlq
 cargo build
 cargo test
